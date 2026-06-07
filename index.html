@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>🎮 MEMORY QUEST | 5 Epic Levels · Sound Effects · Timer · Lives</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0a0f1c 0%, #0a0a1a 100%);
+      font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 20% 40%, rgba(255, 100, 50, 0.1) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 70%, rgba(50, 150, 255, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .game-wrapper {
+      max-width: 1300px;
+      width: 100%;
+      background: rgba(10, 20, 30, 0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1.5rem;
+      box-shadow: 0 30px 50px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 200, 100, 0.3);
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Start Screen */
+    .start-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #0a0f1c, #0a0a1a);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+      transition: all 0.5s ease;
+    }
+
+    .start-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .start-card {
+      background: linear-gradient(145deg, #1e2f3a, #14222e);
+      padding: 3rem;
+      border-radius: 2rem;
+      text-align: center;
+      border: 2px solid #ffc978;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(255, 200, 100, 0.3); }
+      50% { transform: scale(1.02); box-shadow: 0 0 40px rgba(255, 200, 100, 0.6); }
+    }
+
+    .start-card h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #FFE6B0, #FFA559);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin-bottom: 1rem;
+    }
+
+    .start-card button {
+      background: linear-gradient(145deg, #F9C74F, #F9844A);
+      border: none;
+      padding: 1rem 2.5rem;
+      font-size: 1.3rem;
+      font-weight: bold;
+      border-radius: 60px;
+      cursor: pointer;
+      margin-top: 1.5rem;
+      transition: transform 0.2s;
+    }
+
+    .start-card button:hover {
+      transform: scale(1.05);
+    }
+
+    .game-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.2rem;
+      padding-bottom: 0.8rem;
+      border-bottom: 2px solid rgba(255, 200, 100, 0.5);
+    }
+
+    .title-area h1 {
+      font-size: 1.5rem;
+      background: linear-gradient(135deg, #FFE6B0, #FFA559);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .stats-grid {
+      display: flex;
+      gap: 1.2rem;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.4rem 1.2rem;
+      border-radius: 60px;
+    }
+
+    .stat-badge {
+      display: flex;
+      align-items: baseline;
+      gap: 0.3rem;
+      font-weight: bold;
+    }
+
+    .stat-badge span:first-child {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #c0d4e8;
+    }
+
+    .stat-badge span:last-child {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #F9C74F;
+      font-family: monospace;
+    }
+
+    /* Level Map */
+    .level-map {
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 1.5rem;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+
+    .level-path {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .level-node {
+      text-align: center;
+      position: relative;
+    }
+
+    .level-node::after {
+      content: '→';
+      position: absolute;
+      right: -25px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.5rem;
+      color: #ffc978;
+    }
+
+    .level-node:last-child::after {
+      content: '';
+    }
+
+    .level-btn-map {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #2a3f4f, #1e2f3c);
+      border: 2px solid #ffc978;
+      font-weight: bold;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      color: #FFE3A4;
+    }
+
+    .level-btn-map.unlocked {
+      background: linear-gradient(145deg, #F9C74F, #F9844A);
+      color: #1e2f2f;
+      cursor: pointer;
+    }
+
+    .level-btn-map.locked {
+      background: #2a3f4f;
+      color: #6688aa;
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .level-btn-map.completed {
+      background: linear-gradient(145deg, #4CAF50, #2E7D32);
+      border-color: #81C784;
+    }
+
+    .level-name {
+      font-size: 0.7rem;
+      margin-top: 0.3rem;
+      color: #ffc978;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin: 0.8rem 0;
+    }
+
+    .lives-panel {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 0.3rem 1rem;
+      border-radius: 50px;
+    }
+
+    .heart {
+      font-size: 1.5rem;
+      transition: 0.2s;
+    }
+
+    .heart.lost {
+      opacity: 0.25;
+      filter: grayscale(0.8);
+    }
+
+    .timer-warning {
+      color: #ff6666;
+      animation: blink 0.5s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .ctrl-btn {
+      background: #334e62;
+      border: none;
+      padding: 0.5rem 1.2rem;
+      border-radius: 40px;
+      font-weight: bold;
+      color: #FFF3CF;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .cards-grid {
+      display: grid;
+      gap: 0.8rem;
+      margin: 1.5rem 0 1rem;
+      justify-content: center;
+      min-height: 400px;
+    }
+
+    .card {
+      cursor: pointer;
+      perspective: 800px;
+      width: 90px;
+      height: 120px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @media (max-width: 768px) {
+      .card { width: 70px; height: 93px; }
+      .level-btn-map { width: 55px; height: 55px; font-size: 0.9rem; }
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.4, 1.2);
+      transform-style: preserve-3d;
+      border-radius: 0.8rem;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card.matched {
+      filter: drop-shadow(0 0 8px #6feb9e);
+      cursor: default;
+      animation: matchGlow 0.3s ease;
+    }
+
+    @keyframes matchGlow {
+      0% { filter: drop-shadow(0 0 0px #6feb9e); transform: scale(1); }
+      50% { filter: drop-shadow(0 0 20px #6feb9e); transform: scale(1.05); }
+      100% { filter: drop-shadow(0 0 8px #6feb9e); transform: scale(1); }
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .card-back {
+      background: radial-gradient(circle at 30% 30%, #ffdd88, #da9e2b);
+      border: 2px solid #ffdd99;
+      font-size: 2rem;
+      font-weight: bold;
+      color: rgba(255, 245, 200, 0.95);
+    }
+
+    .card-front {
+      background: #fff4e4;
+      transform: rotateY(180deg);
+      padding: 0.3rem;
+    }
+
+    .card-front img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 0.6rem;
+    }
+
+    .game-message {
+      background: #1e3648;
+      padding: 0.6rem 1rem;
+      border-radius: 60px;
+      text-align: center;
+      font-weight: 500;
+      margin-top: 1rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      visibility: hidden;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .modal-card {
+      background: linear-gradient(145deg, #1e2f3a, #14222e);
+      max-width: 380px;
+      width: 85%;
+      padding: 1.8rem;
+      border-radius: 2rem;
+      text-align: center;
+      border: 1px solid #ffc978;
+    }
+  </style>
+</head>
+<body>
+<div class="start-screen" id="startScreen">
+  <div class="start-card">
+    <h1>🗺️ MEMORY QUEST</h1>
+    <p style="color: #ffc978; margin: 1rem 0;">5 Epic Levels · Timer Challenge · Lives System</p>
+    <button id="startGameBtn">🎮 START GAME</button>
+  </div>
+</div>
+
+<div class="game-wrapper" style="display: none;" id="gameWrapper">
+  <div class="game-header">
+    <div class="title-area">
+      <h1>🗺️ MEMORY QUEST</h1>
+      <p>Match pairs · Beat the timer · Unlock levels</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-badge"><span>🎚️ LEVEL</span><span id="levelDisplay">1/5</span></div>
+      <div class="stat-badge"><span>⏱️ TIME</span><span id="timerDisplay" class="">00:00</span></div>
+      <div class="stat-badge"><span>🎯 MOVES</span><span id="moveCount">0</span></div>
+    </div>
+  </div>
+
+  <!-- Level Map -->
+  <div class="level-map">
+    <div class="level-path" id="levelMapContainer"></div>
+  </div>
+
+  <div class="action-bar">
+    <div class="lives-panel" id="livesPanel">❤️❤️❤️❤️❤️</div>
+    <button class="ctrl-btn" id="resetGameBtn">🔄 RESET GAME</button>
+    <button class="ctrl-btn" id="musicToggleBtn">🔊 SOUND ON</button>
+  </div>
+
+  <div class="cards-grid" id="cardsGrid"></div>
+  <div class="game-message" id="gameMessage">✨ Select a level to begin your quest!</div>
+</div>
+
+<div id="resultModal" class="modal-overlay">
+  <div class="modal-card">
+    <h2 id="modalTitle">🏆 VICTORY!</h2>
+    <p id="modalMessage"></p>
+    <button class="ctrl-btn" id="modalCloseBtn" style="margin-top: 1rem;">Continue ➡️</button>
+  </div>
+</div>
+
+<script>
+  // ========== LEVEL CONFIGURATION ==========
+  const LEVELS = [
+    { name: "FOREST", cols: 3, rows: 2, pairs: 3, timeLimit: 45, totalCards: 6 },
+    { name: "OCEAN", cols: 4, rows: 3, pairs: 6, timeLimit: 60, totalCards: 12 },
+    { name: "MOUNTAIN", cols: 4, rows: 4, pairs: 8, timeLimit: 75, totalCards: 16 },
+    { name: "VOLCANO", cols: 6, rows: 4, pairs: 12, timeLimit: 90, totalCards: 24 },
+    { name: "LEGEND", cols: 6, rows: 5, pairs: 15, timeLimit: 120, totalCards: 30 }
+  ];
+
+  // Image pool
+  const IMAGE_POOL = [
+    "https://picsum.photos/id/104/200/250", "https://picsum.photos/id/20/200/250",
+    "https://picsum.photos/id/29/200/250", "https://picsum.photos/id/96/200/250",
+    "https://picsum.photos/id/155/200/250", "https://picsum.photos/id/169/200/250",
+    "https://picsum.photos/id/42/200/250", "https://picsum.photos/id/26/200/250",
+    "https://picsum.photos/id/13/200/250", "https://picsum.photos/id/15/200/250",
+    "https://picsum.photos/id/22/200/250", "https://picsum.photos/id/33/200/250",
+    "https://picsum.photos/id/45/200/250", "https://picsum.photos/id/58/200/250",
+    "https://picsum.photos/id/63/200/250"
+  ];
+
+  // Game state
+  let currentLevel = 0;
+  let unlockedLevels = [true, false, false, false, false];
+  let completedLevels = [false, false, false, false, false];
+  let cards = [];
+  let moveCount = 0;
+  let matchedCount = 0;
+  let lives = 5;
+  let gameActive = true;
+  let levelComplete = false;
+  let boardLocked = false;
+  let firstCard = null;
+  let secondCard = null;
+  let flipTimer = null;
+  
+  // Timer
+  let timerSeconds = 0;
+  let timerInterval = null;
+  let timeLimit = 0;
+  let timerActive = false;
+  
+  // Audio (using Web Audio API for all sounds)
+  let audioCtx = null;
+  let soundsEnabled = true;
+  
+  // DOM elements
+  const gameWrapper = document.getElementById('gameWrapper');
+  const startScreen = document.getElementById('startScreen');
+  const startBtn = document.getElementById('startGameBtn');
+  const gridContainer = document.getElementById('cardsGrid');
+  const levelDisplaySpan = document.getElementById('levelDisplay');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const moveDisplay = document.getElementById('moveCount');
+  const livesPanel = document.getElementById('livesPanel');
+  const messageDiv = document.getElementById('gameMessage');
+  const resetBtn = document.getElementById('resetGameBtn');
+  const musicBtn = document.getElementById('musicToggleBtn');
+  const levelMapContainer = document.getElementById('levelMapContainer');
+  const modal = document.getElementById('resultModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalClose = document.getElementById('modalCloseBtn');
+  
+  // Initialize Audio
+  function initAudio() {
+    if (audioCtx) return;
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) { console.log("Audio not supported"); }
+  }
+  
+  // Sound effects
+  function playSound(type) {
+    if (!soundsEnabled || !audioCtx) return;
+    try {
+      const now = audioCtx.currentTime;
+      const gain = audioCtx.createGain();
+      gain.connect(audioCtx.destination);
+      
+      if (type === 'tap') {
+        const osc = audioCtx.createOscillator();
+        osc.connect(gain);
+        osc.frequency.value = 800;
+        gain.gain.value = 0.1;
+        osc.start(now);
+        osc.stop(now + 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+      }
+      else if (type === 'correct') {
+        gain.gain.value = 0.15;
+        [523.25, 659.25].forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          osc.connect(gain);
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          osc.start(now + i * 0.1);
+          osc.stop(now + i * 0.1 + 0.3);
+        });
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+      }
+      else if (type === 'wrong') {
+        const osc = audioCtx.createOscillator();
+        osc.connect(gain);
+        osc.frequency.value = 440;
+        osc.type = 'sawtooth';
+        gain.gain.value = 0.15;
+        osc.start(now);
+        osc.stop(now + 0.3);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+      }
+      else if (type === 'win') {
+        gain.gain.value = 0.2;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          osc.connect(gain);
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          osc.start(now + i * 0.15);
+          osc.stop(now + i * 0.15 + 0.4);
+        });
+      }
+      else if (type === 'lose') {
+        const osc = audioCtx.createOscillator();
+        osc.connect(gain);
+        osc.frequency.value = 220;
+        osc.type = 'sawtooth';
+        gain.gain.value = 0.2;
+        osc.start(now);
+        osc.stop(now + 0.5);
+        const osc2 = audioCtx.createOscillator();
+        osc2.connect(gain);
+        osc2.frequency.value = 174.61;
+        osc2.type = 'sawtooth';
+        osc2.start(now + 0.25);
+        osc2.stop(now + 0.75);
+      }
+      else if (type === 'lifeLoss') {
+        const osc = audioCtx.createOscillator();
+        osc.connect(gain);
+        osc.frequency.value = 330;
+        osc.type = 'triangle';
+        gain.gain.value = 0.2;
+        osc.start(now);
+        osc.stop(now + 0.4);
+      }
+    } catch(e) {}
+  }
+  
+  // Update UI
+  function updateLives() {
+    let html = '';
+    for (let i = 0; i < 5; i++) {
+      html += `<span class="heart ${i >= lives ? 'lost' : ''}">❤️</span>`;
+    }
+    livesPanel.innerHTML = html;
+  }
+  
+  function setMessage(msg, isError = false) {
+    messageDiv.textContent = msg;
+    messageDiv.style.background = isError ? '#8b3c2c' : '#1e3648';
+    setTimeout(() => {
+      if (messageDiv.textContent === msg) messageDiv.style.background = '#1e3648';
+    }, 2000);
+  }
+  
+  // Timer functions
+  function startTimer() {
+    if (timerInterval) clearInterval(timerInterval);
+    timerActive = true;
+    timerInterval = setInterval(() => {
+      if (!gameActive || levelComplete) return;
+      if (timerSeconds <= 0) {
+        // Time's up - lose a life
+        if (gameActive && !levelComplete) {
+          clearInterval(timerInterval);
+          timerActive = false;
+          loseLife(true);
+        }
+      } else {
+        timerSeconds--;
+        const mins = Math.floor(timerSeconds / 60);
+        const secs = timerSeconds % 60;
+        timerDisplay.textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+        
+        if (timerSeconds <= 10) {
+          timerDisplay.classList.add('timer-warning');
+          playSound('tap');
+        } else {
+          timerDisplay.classList.remove('timer-warning');
+        }
+      }
+    }, 1000);
+  }
+  
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    timerActive = false;
+  }
+  
+  function resetTimer() {
+    stopTimer();
+    timeLimit = LEVELS[currentLevel].timeLimit;
+    timerSeconds = timeLimit;
+    const mins = Math.floor(timerSeconds / 60);
+    const secs = timerSeconds % 60;
+    timerDisplay.textContent = `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
+    timerDisplay.classList.remove('timer-warning');
+  }
+  
+  // Level Map Update
+  function updateLevelMap() {
+    levelMapContainer.innerHTML = '';
+    LEVELS.forEach((level, idx) => {
+      const node = document.createElement('div');
+      node.className = 'level-node';
+      const btn = document.createElement('button');
+      btn.className = 'level-btn-map';
+      
+      if (completedLevels[idx]) {
+        btn.classList.add('completed');
+        btn.textContent = '✓';
+      } else if (unlockedLevels[idx]) {
+        btn.classList.add('unlocked');
+        btn.textContent = `${idx + 1}`;
+      } else {
+        btn.classList.add('locked');
+        btn.textContent = '🔒';
+      }
+      
+      btn.addEventListener('click', () => {
+        if (unlockedLevels[idx] && !completedLevels[idx] && gameActive) {
+          changeLevel(idx);
+        } else if (completedLevels[idx]) {
+          setMessage(`✨ ${level.name} already completed!`, false);
+        } else if (!unlockedLevels[idx]) {
+          setMessage(`🔒 Complete previous level to unlock!`, true);
+        }
+      });
+      
+      const nameSpan = document.createElement('div');
+      nameSpan.className = 'level-name';
+      nameSpan.textContent = level.name;
+      
+      node.appendChild(btn);
+      node.appendChild(nameSpan);
+      levelMapContainer.appendChild(node);
+    });
+  }
+  
+  // Check win
+  function checkWin() {
+    if (matchedCount === LEVELS[currentLevel].pairs) {
+      levelComplete = true;
+      gameActive = false;
+      stopTimer();
+      setMessage(`🎉 LEVEL CLEARED! 🎉`);
+      playSound('win');
+      
+      completedLevels[currentLevel] = true;
+      if (currentLevel + 1 < LEVELS.length) {
+        unlockedLevels[currentLevel + 1] = true;
+      }
+      updateLevelMap();
+      
+      modalTitle.innerHTML = "🏆 VICTORY! 🏆";
+      modalMessage.innerHTML = `You cleared ${LEVELS[currentLevel].name}!<br>Moves: ${moveCount}<br>Time remaining: ${timerSeconds}s`;
+      modal.classList.add('active');
+      return true;
+    }
+    return false;
+  }
+  
+  // Lose life
+  function loseLife(fromTimer = false) {
+    if (!gameActive || levelComplete) return;
+    
+    lives--;
+    updateLives();
+    playSound('lifeLoss');
+    
+    if (fromTimer) {
+      setMessage(`⏰ Time's up! Lost a life! ${lives} left`, true);
+    } else {
+      setMessage(`💔 Wrong match! Lost a life! ${lives} left`, true);
+    }
+    
+    if (lives <= 0) {
+      gameActive = false;
+      levelComplete = false;
+      stopTimer();
+      setMessage(`💀 GAME OVER!`, true);
+      playSound('lose');
+      
+      modalTitle.innerHTML = "💀 DEFEAT... 💀";
+      modalMessage.innerHTML = `You failed ${LEVELS[currentLevel].name}!<br>Try again.`;
+      modal.classList.add('active');
+    } else {
+      // Reset board after losing life - flip back all unmatched cards
+      if (flipTimer) clearTimeout(flipTimer);
+      boardLocked = false;
+      firstCard = null;
+      secondCard = null;
+      cards.forEach(card => {
+        if (!card.matched && card.flipped) {
+          card.flipped = false;
+          if (card.element) card.element.classList.remove('flipped');
+        }
+      });
+      
+      // Reset timer if it was from timeout
+      if (fromTimer) {
+        resetTimer();
+        startTimer();
+      }
+    }
+  }
+  
+  // Check match
+  function checkMatch() {
+    const card1 = cards[firstCard];
+    const card2 = cards[secondCard];
+    
+    if (card1.pairId === card2.pairId) {
+      // Correct match
+      card1.matched = true;
+      card2.matched = true;
+      if (card1.element) card1.element.classList.add('matched');
+      if (card2.element) card2.element.classList.add('matched');
+      matchedCount++;
+      moveCount++;
+      moveDisplay.textContent = moveCount;
+      playSound('correct');
+      
+      firstCard = null;
+      secondCard = null;
+      boardLocked = false;
+      
+      checkWin();
+    } else {
+      // Wrong match
+      moveCount++;
+      moveDisplay.textContent = moveCount;
+      playSound('wrong');
+      
+      boardLocked = true;
+      flipTimer = setTimeout(() => {
+        if (!cards[firstCard].matched && cards[firstCard].flipped) {
+          cards[firstCard].flipped = false;
+          if (cards[firstCard].element) cards[firstCard].element.classList.remove('flipped');
+        }
+        if (!cards[secondCard].matched && cards[secondCard].flipped) {
+          cards[secondCard].flipped = false;
+          if (cards[secondCard].element) cards[secondCard].element.classList.remove('flipped');
+        }
+        firstCard = null;
+        secondCard = null;
+        boardLocked = false;
+        setMessage("❌ Not a match!", true);
+      }, 700);
+    }
+  }
+  
+  // Card click handler
+  function onCardClick(index) {
+    if (!gameActive || levelComplete || boardLocked) return;
+    
+    const card = cards[index];
+    if (card.matched || card.flipped) return;
+    
+    card.flipped = true;
+    if (card.element) card.element.classList.add('flipped');
+    playSound('tap');
+    
+    if (firstCard === null) {
+      firstCard = index;
+    } else if (secondCard === null && firstCard !== index) {
+      secondCard = index;
+      checkMatch();
+    }
+  }
+  
+  // Build deck
+  function buildDeck() {
+    const pairsNeeded = LEVELS[currentLevel].pairs;
+    const images = IMAGE_POOL.slice(0, pairsNeeded);
+    let deck = [];
+    for (let i = 0; i < pairsNeeded; i++) {
+      deck.push({ pairId: i, imageUrl: images[i], flipped: false, matched: false, element: null });
+      deck.push({ pairId: i, imageUrl: images[i], flipped: false, matched: false, element: null });
+    }
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    return deck;
+  }
+  
+  // Render grid
+  function renderGame() {
+    gridContainer.innerHTML = '';
+    const { cols } = LEVELS[currentLevel];
+    gridContainer.style.gridTemplateColumns = `repeat(${cols}, 90px)`;
+    
+    cards.forEach((card, idx) => {
+      const cardDiv = document.createElement('div');
+      cardDiv.className = 'card';
+      if (card.flipped) cardDiv.classList.add('flipped');
+      if (card.matched) cardDiv.classList.add('matched');
+      
+      const inner = document.createElement('div');
+      inner.className = 'card-inner';
+      
+      const front = document.createElement('div');
+      front.className = 'card-front';
+      const img = document.createElement('img');
+      img.src = card.imageUrl;
+      img.alt = 'card';
+      front.appendChild(img);
+      
+      const back = document.createElement('div');
+      back.className = 'card-back';
+      back.textContent = '?';
+      
+      inner.appendChild(front);
+      inner.appendChild(back);
+      cardDiv.appendChild(inner);
+      
+      cardDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onCardClick(idx);
+      });
+      
+      gridContainer.appendChild(cardDiv);
+      card.element = cardDiv;
+    });
+  }
+  
+  // Reset current level
+  function resetLevel() {
+    if (flipTimer) clearTimeout(flipTimer);
+    stopTimer();
+    
+    gameActive = true;
+    levelComplete = false;
+    boardLocked = false;
+    firstCard = null;
+    secondCard = null;
+    moveCount = 0;
+    matchedCount = 0;
+    lives = 5;
+    
+    moveDisplay.textContent = "0";
+    updateLives();
+    
+    cards = buildDeck();
+    renderGame();
+    resetTimer();
+    startTimer();
+    
+    setMessage(`✨ ${LEVELS[currentLevel].name} · Find ${LEVELS[currentLevel].pairs} pairs · ${timeLimit}s limit`, false);
+  }
+  
+  // Change level
+  function changeLevel(levelIdx) {
+    if (!unlockedLevels[levelIdx]) return;
+    if (levelIdx === currentLevel && gameActive) {
+      resetLevel();
+      return;
+    }
+    
+    currentLevel = levelIdx;
+    levelDisplaySpan.textContent = `${currentLevel + 1}/${LEVELS.length}`;
+    updateLevelMap();
+    resetLevel();
+  }
+  
+  // Full game reset
+  function fullReset() {
+    unlockedLevels = [true, false, false, false, false];
+    completedLevels = [false, false, false, false, false];
+    currentLevel = 0;
+    levelDisplaySpan.textContent = `1/${LEVELS.length}`;
+    updateLevelMap();
+    resetLevel();
+  }
+  
+  // Modal close
+  function closeModal() {
+    modal.classList.remove('active');
+    if (completedLevels[currentLevel] && currentLevel + 1 < LEVELS.length && unlockedLevels[currentLevel + 1]) {
+      // Auto move to next level if available
+      changeLevel(currentLevel + 1);
+    } else if (lives <= 0) {
+      resetLevel();
+    }
+  }
+  
+  // Start game
+  function startGame() {
+    startScreen.classList.add('hidden');
+    setTimeout(() => {
+      startScreen.style.display = 'none';
+      gameWrapper.style.display = 'block';
+      initAudio();
+      fullReset();
+    }, 500);
+  }
+  
+  // Event listeners
+  startBtn.addEventListener('click', startGame);
+  resetBtn.addEventListener('click', () => fullReset());
+  musicBtn.addEventListener('click', () => {
+    soundsEnabled = !soundsEnabled;
+    musicBtn.innerHTML = soundsEnabled ? "🔊 SOUND ON" : "🔇 SOUND OFF";
+  });
+  modalClose.addEventListener('click', closeModal);
+</script>
+</body>
+</html>
